@@ -78,7 +78,7 @@ def extract_features(window):
     
     x = []
     feature_names = []
-    
+
     #call functions to compute other features. Append the features to x and the names of these features to feature_names
     x.append(_compute_mean_features(window))
     feature_names.append("x_mean")
@@ -119,6 +119,6 @@ def extract_features(window):
     x.append(_compute_mean_amplitudes(window))
     feature_names.append('mean of amplitudes')
 
-    feature_vector = np.concatenate(x, axis=0)  #convert the list of features to a single 1-dimensional vector
+    feature_vector = np.concatenate(x, axis=0) #convert the list of features to a single 1-dimensional vector
     
     return feature_names, feature_vector
