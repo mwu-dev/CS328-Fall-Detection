@@ -6,6 +6,7 @@ from features import extract_features
 from sklearn.model_selection import KFold
 from sklearn.tree import export_graphviz, DecisionTreeClassifier
 from sklearn.metrics import accuracy_score, precision_score, recall_score
+import pickle
 
 #--------------------------------------------------
 #
@@ -15,11 +16,18 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score
 
 print('Currently loading data into a singular file... ', end = '')
 class_names = ['sitting', 'standing', 'laying', 'walking', 'falling']
-dir_name = 'data'
+dir_name = './data/trainingData'
 output_file = open('activity.csv', 'w')
 for filename in os.listdir(dir_name):
-    class_index = class_names.index(filename[:-4])
-    f = open('data/' + filename, 'r')
+    try:
+        if 'fall' in filename:
+            class_index = class_names.index('falling')
+        else:
+            class_index = class_names.index(filename[:-4])
+    except:
+        continue
+    f = open('data/trainingData/' + filename, 'r')
+    f.readline() #remove separator
     f.readline() #remove header
     for line in f:
         line = line.strip()
@@ -49,7 +57,7 @@ for i, window in slidingWindow(data, window_size, step_size):
     data_window = np.delete(window, (3,4,5), axis = 1) #take only the x,y,z data
     feature_names, x = extract_features(data_window)
     X.append(x)
-    Y.append(window[window_size/2, -1])
+    Y.append(window[window_size//2, -1])
 
 X = np.asarray(X)
 Y = np.asarray(Y)
@@ -64,7 +72,7 @@ print('Done!')
 print('Beginning to train various different depths of decision trees...')
 cv = KFold(n_splits = 10, random_state = None, shuffle = True)
 
-print('Depth\t|\tAccuracy\t|\tPrecision\t|\tRecall')
+print('Depth\t|\tAccuracy\t\t|\tPrecision\t\t|\tRecall')
 for depth in range(1,8): #trying different depths
     acc = []
     prec = []
@@ -76,5 +84,17 @@ for depth in range(1,8): #trying different depths
         acc.append(accuracy_score(Y[test], prediction))
         prec.append(precision_score(Y[test], prediction, average = 'weighted'))
         rec.append(recall_score(Y[test], prediction, average = 'weighted'))
-    print(f'{depth}\t|\t{np.mean(acc)}\t|\t{np.mean(prec)}\t|\t{np.mean(rec)}')
+    print(f'{depth}\t|\t{np.mean(acc):.15f}\t|\t{np.mean(prec):.15f}\t|\t{np.mean(rec):.15f}')
 
+#--------------------------------------------------
+#
+#        Save all trees and export to pickle
+#
+#--------------------------------------------------
+
+for i in range(1,8):
+    allTree = DecisionTreeClassifier(criterion = 'entropy', max_depth = i)
+    allTree.fit(X, Y)
+    export_graphviz(allTree, out_file = f'dots/tree_{i}.dot', feature_names = feature_names)
+    with open(f'pickles/classifier_{i}.pickle', 'wb') as f:
+        pickle.dump(allTree, f)
